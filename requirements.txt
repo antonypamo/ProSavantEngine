@@ -1,0 +1,6 @@
+numpy
+scipy
+plotly
+umap-learn
+websockets
+sentence-transformers
