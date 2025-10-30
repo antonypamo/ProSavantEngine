@@ -5,6 +5,8 @@ from .geometry import IcosahedralField
 from .physics import DiracHamiltonian
 from .resonance import ResonanceSimulator, harmonic_quantization
 from .self_improvement import SelfImprover
+from .data import DataRepository
+from .reflection import OmegaReflection
 from .core import AGIRRFCore
 from .main import launch
 
@@ -18,6 +20,8 @@ __all__ = [
     "ResonanceSimulator",
     "harmonic_quantization",
     "SelfImprover",
+    "DataRepository",
+    "OmegaReflection",
     "AGIRRFCore",
     "launch",
 ]

@@ -40,7 +40,13 @@ class ResonanceSimulator:
         signal = np.sin(2 * np.pi * freq * t)
         spectrum = np.abs(fft(signal))[:1024]
         dom_freq = float(fftfreq(2048, 1 / 44100)[:1024][np.argmax(spectrum)])
-        return {"signal": signal, "dominant_frequency": dom_freq}
+        return {"signal": signal, "dominant_frequency": dom_freq, "embedding": vector}
+
+    @property
+    def embedder(self) -> SentenceTransformer:
+        """Expose the shared embedding model used internally."""
+
+        return get_embedder()
 
 
 def harmonic_quantization(base_freq: float = 440.0, steps: int = 12) -> Iterable[float]:
