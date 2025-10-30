@@ -66,7 +66,11 @@ def _run_cli() -> None:
         if not query:
             continue
         response = core.query(query)
-        print(json.dumps(response, indent=2))
+        summary = core.omega_summary()
+        payload = dict(response)
+        if summary:
+            payload["omega_summary"] = summary
+        print(json.dumps(payload, indent=2))
 
 
 async def _client_mode(
