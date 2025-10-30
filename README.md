@@ -52,3 +52,12 @@ It models cognition, resonance, and geometry as a **self-organizing icosahedral 
 ```bash
 pip install -r requirements.txt
 python AGI_RRF_Phi9_Delta.py
+```
+
+The launcher now also supports direct command-line arguments:
+
+```bash
+python -m prosavant_engine --mode server --host 0.0.0.0 --port 8765
+python -m prosavant_engine --mode client --server-uri ws://localhost:8765
+```
+
