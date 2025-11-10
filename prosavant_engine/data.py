@@ -6,9 +6,26 @@ import csv
 import importlib.util
 import json
 import os
+import warnings
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional
 
+try:  # pragma: no cover - optional dependency
+    from huggingface_hub import snapshot_download
+except Exception:  # pragma: no cover - safety net for partial installs
+    snapshot_download = None  # type: ignore[assignment]
+
+
+ENV_BASE_PATH = "SAVANT_DATA_PATH"
+ENV_REMOTE_DATASET = "SAVANT_REMOTE_DATASET"
+DEFAULT_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "prosavant", "datasets")
+STRUCTURED_MARKERS: tuple[str, ...] = (
+    "equations.json",
+    "icosahedron_nodes.json",
+    "frequencies.csv",
+    "constants.csv",
+)
 DEFAULT_POSSIBLE_PATHS: tuple[str, ...] = (
     "/content/drive/MyDrive/savant_rrf1/",
     "/content/drive/MyDrive/SAVANT_CORE/",
@@ -22,6 +39,8 @@ class DataRepository:
 
     base_path: Optional[str] = None
     possible_paths: Iterable[str] = field(default_factory=lambda: DEFAULT_POSSIBLE_PATHS)
+    remote_dataset: Optional[str] = None
+    cache_dir: str = DEFAULT_CACHE_DIR
     log_filename: str = "omega_log.jsonl"
     remote_repo: Optional[str] = None
     remote_revision: Optional[str] = None
@@ -146,4 +165,10 @@ class DataRepository:
         return os.path.join(directory, self.log_filename)
 
 
-__all__ = ["DataRepository", "DEFAULT_POSSIBLE_PATHS"]
+__all__ = [
+    "DataRepository",
+    "DEFAULT_POSSIBLE_PATHS",
+    "STRUCTURED_MARKERS",
+    "ENV_BASE_PATH",
+    "ENV_REMOTE_DATASET",
+]
