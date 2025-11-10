@@ -70,3 +70,11 @@ pip install gradio
 python -c "from prosavant_engine.ui import launch_ui; launch_ui()"
 ```
 
+### Remote dataset support
+
+Set the `SAVANT_REMOTE_DATASET` environment variable to automatically download
+structured data from the Hugging Face Hub. Optional variables include
+`SAVANT_REMOTE_DATASET_REVISION` (specific commit), `SAVANT_REMOTE_DATASET_SUBDIR`
+(subdirectory containing the files), and `SAVANT_DATASET_CACHE_DIR` (custom
+cache path).
+
