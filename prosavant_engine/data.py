@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import os
 import warnings
@@ -41,32 +42,27 @@ class DataRepository:
     remote_dataset: Optional[str] = None
     cache_dir: str = DEFAULT_CACHE_DIR
     log_filename: str = "omega_log.jsonl"
+    remote_repo: Optional[str] = None
+    remote_revision: Optional[str] = None
+    remote_subdir: Optional[str] = None
+    cache_dir: Optional[str] = None
 
     def __post_init__(self) -> None:
-        self.base_path = self._initial_base_path()
-        if self.base_path is None and self.remote_dataset:
-            self.base_path = self._download_remote_dataset(self.remote_dataset)
+        self.remote_repo = self.remote_repo or os.getenv("SAVANT_REMOTE_DATASET") or None
+        self.remote_revision = self.remote_revision or os.getenv("SAVANT_REMOTE_DATASET_REVISION") or None
+        self.remote_subdir = self.remote_subdir or os.getenv("SAVANT_REMOTE_DATASET_SUBDIR") or None
+        self.cache_dir = self.cache_dir or os.getenv("SAVANT_DATASET_CACHE_DIR") or None
 
-    def _initial_base_path(self) -> Optional[str]:
-        """Determine the starting base path, considering env vars and fallbacks."""
+        if self.base_path is None and self.remote_repo:
+            self.base_path = self._download_remote_dataset(
+                repo_id=self.remote_repo,
+                revision=self.remote_revision,
+                subdir=self.remote_subdir,
+                cache_dir=self.cache_dir,
+            )
 
-        if self.base_path and os.path.exists(self.base_path):
-            return self.base_path
-
-        env_base = os.getenv(ENV_BASE_PATH)
-        if env_base and os.path.exists(env_base):
-            return env_base
-
-        if self.remote_dataset is None:
-            env_remote = os.getenv(ENV_REMOTE_DATASET)
-            if env_remote:
-                self.remote_dataset = env_remote
-
-        detected = self._detect_base_path()
-        if detected:
-            return detected
-
-        return None
+        if self.base_path is None:
+            self.base_path = self._detect_base_path()
 
     def _detect_base_path(self) -> Optional[str]:
         for path in self.possible_paths:
@@ -79,53 +75,59 @@ class DataRepository:
             return None
         return os.path.join(self.base_path, *parts)
 
-    # ------------------------------------------------------------------
-    # Remote dataset support
-    # ------------------------------------------------------------------
+    def _download_remote_dataset(
+        self,
+        *,
+        repo_id: str,
+        revision: Optional[str],
+        subdir: Optional[str],
+        cache_dir: Optional[str],
+    ) -> Optional[str]:
+        """Download a dataset snapshot from the Hugging Face Hub."""
 
-    def _download_remote_dataset(self, repo_id: str) -> Optional[str]:
-        """Download a remote dataset via ``huggingface_hub`` when available."""
-
-        if not repo_id:
-            return None
-
-        if snapshot_download is None:
-            warnings.warn(
-                "huggingface_hub is not installed; cannot download remote dataset",
-                RuntimeWarning,
-                stacklevel=2,
+        hub_spec = importlib.util.find_spec("huggingface_hub")
+        if hub_spec is None:
+            raise RuntimeError(
+                "Remote dataset support requires the 'huggingface-hub' package."
             )
-            return None
 
-        cache_dir = Path(self.cache_dir)
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        local_dir = cache_dir / repo_id.replace("/", "__")
+        from huggingface_hub import snapshot_download
 
-        try:
-            snapshot_path = snapshot_download(
-                repo_id=repo_id,
-                repo_type="dataset",
-                local_dir=str(local_dir),
+        target_cache = cache_dir
+        if target_cache is None:
+            safe_repo = repo_id.replace("/", "__")
+            target_cache = os.path.join(
+                os.path.expanduser("~"),
+                ".prosavant",
+                "datasets",
+                safe_repo,
             )
-        except Exception as exc:  # pragma: no cover - network errors at runtime
-            warnings.warn(
-                f"Failed to download dataset '{repo_id}': {exc}",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-            return None
+        os.makedirs(target_cache, exist_ok=True)
 
-        structured_root = self._locate_structured_root(snapshot_path)
-        return structured_root or snapshot_path
+        download_kwargs = {
+            "repo_id": repo_id,
+            "repo_type": "dataset",
+            "local_dir": target_cache,
+        }
+        if revision:
+            download_kwargs["revision"] = revision
 
-    def _locate_structured_root(self, root: str) -> Optional[str]:
-        """Search ``root`` for a directory containing structured data markers."""
+        dataset_path = snapshot_download(**download_kwargs)
 
-        markers = set(STRUCTURED_MARKERS)
-        for current, _dirs, files in os.walk(root):
-            if markers.intersection(files):
-                return current
-        return None
+        candidate_paths = [dataset_path]
+        if subdir:
+            candidate_paths.append(os.path.join(dataset_path, subdir))
+        candidate_paths.extend(
+            [
+                os.path.join(dataset_path, "data"),
+                os.path.join(dataset_path, repo_id.split("/")[-1]),
+            ]
+        )
+
+        for candidate in candidate_paths:
+            if candidate and os.path.exists(candidate):
+                return candidate
+        return dataset_path
 
     def load_structured(self) -> Dict[str, Mapping[str, object] | List[Mapping[str, object]]]:
         """Load JSON/CSV structured data when available."""
