@@ -1,27 +1,37 @@
-"""Prosavant Engine package exposing the AGI RRF core primitives."""
+"""ProSavantEngine public API (lightweight).
 
-from .config import VERSION, DEFAULT_MODEL_NAME, DEFAULT_SERVER_URI, DEFAULT_USER
-from .geometry import IcosahedralField
-from .physics import DiracHamiltonian
-from .resonance import ResonanceSimulator, harmonic_quantization
-from .self_improvement import SelfImprover
-from .data import DataRepository
-from .reflection import OmegaReflection
-from .core import AGIRRFCore
-from .main import launch
+Avoid importing the heavy `resonance` module (which pulls transformers/torch)
+at import time. Those symbols are exposed lazily via __getattr__.
+"""
+
+from importlib import import_module
+
+# Re-export lightweight modules eagerly
+from .config import *            # noqa: F401,F403
+from .core import *              # noqa: F401,F403
+from .data import *              # noqa: F401,F403
+from .geometry import *          # noqa: F401,F403
+from .networking import *        # noqa: F401,F403
+from .physics import *           # noqa: F401,F403
+from .reflection import *        # noqa: F401,F403
+from .self_improvement import *  # noqa: F401,F403
+from .ui import *                # noqa: F401,F403
+from .utils import *             # noqa: F401,F403
+
+# Public names that are lazily provided from prosavant_engine.resonance
+__lazy_from_resonance__ = {"ResonanceSimulator", "harmonic_quantization"}
 
 __all__ = [
-    "VERSION",
-    "DEFAULT_MODEL_NAME",
-    "DEFAULT_SERVER_URI",
-    "DEFAULT_USER",
-    "IcosahedralField",
-    "DiracHamiltonian",
-    "ResonanceSimulator",
-    "harmonic_quantization",
-    "SelfImprover",
-    "DataRepository",
-    "OmegaReflection",
-    "AGIRRFCore",
-    "launch",
+    # star-exports above + these lazy names
+    *list(globals().keys()),
+    *list(__lazy_from_resonance__),
 ]
+
+def __getattr__(name: str):
+    if name in __lazy_from_resonance__:
+        mod = import_module(".resonance", __name__)
+        return getattr(mod, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+def __dir__():
+    return sorted(set(globals().keys()) | __lazy_from_resonance__)
