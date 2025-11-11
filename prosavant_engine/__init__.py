@@ -1,6 +1,6 @@
 """ProSavantEngine public API (lightweight).
 
-Avoid importing the heavy `resonance` module (which pulls transformers/torch)
+Avoid importing the heavy `resonance` module (pulls transformers/torch)
 at import time. Those symbols are exposed lazily via __getattr__.
 """
 
@@ -21,12 +21,6 @@ from .utils import *             # noqa: F401,F403
 # Public names that are lazily provided from prosavant_engine.resonance
 __lazy_from_resonance__ = {"ResonanceSimulator", "harmonic_quantization"}
 
-__all__ = [
-    # star-exports above + these lazy names
-    *list(globals().keys()),
-    *list(__lazy_from_resonance__),
-]
-
 def __getattr__(name: str):
     if name in __lazy_from_resonance__:
         mod = import_module(".resonance", __name__)
@@ -34,4 +28,5 @@ def __getattr__(name: str):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 def __dir__():
+    # present lazy names in dir()
     return sorted(set(globals().keys()) | __lazy_from_resonance__)
