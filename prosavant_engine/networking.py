@@ -16,7 +16,10 @@ import websockets
 from websockets.server import WebSocketServerProtocol
 
 from .config import VERSION
-from .resonance import get_embedder
+def __get_embedder()():
+    from .resonance import get_embedder
+    return get_embedder
+
 
 UMAP_AVAILABLE = importlib.util.find_spec("umap") is not None
 if UMAP_AVAILABLE:
@@ -83,7 +86,7 @@ async def _broadcast(
 async def send_to_field(text: str, user: str, server_uri: str) -> None:
     """Encode *text* and publish it to the AGORA field."""
 
-    vector = get_embedder().encode(text).tolist()
+    vector = _get_embedder()().encode(text).tolist()
     payload = {
         "user": user,
         "text": text,

@@ -4,3 +4,4 @@ plotly
 umap-learn
 websockets
 sentence-transformers
+pytest

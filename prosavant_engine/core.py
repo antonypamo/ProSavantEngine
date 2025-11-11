@@ -9,6 +9,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from .geometry import IcosahedralField
+from .utils import to_psi3
 from .physics import DiracHamiltonian
 from .resonance import ResonanceSimulator
 from .self_improvement import SelfImprover
@@ -33,7 +34,11 @@ class AGIRRFCore:
 
         resonance = self.simulator.simulate(text)
         dominant_frequency = resonance["dominant_frequency"]
-        hamiltonian_energy = self.hamiltonian.H(np.array([dominant_frequency]))
+        # Map the resonance embedding (or the dominant frequency) to the
+        # 3-component psi expected by the Hamiltonian using a shared helper.
+        psi_source = resonance.get("embedding", np.array([dominant_frequency]))
+        psi = to_psi3(psi_source)
+        hamiltonian_energy = self.hamiltonian.H(psi)
         coherence = self.self_improver.update(hamiltonian_energy)
         phi = float(np.tanh(abs(hamiltonian_energy) * 1e-6))
         omega = float(np.tanh(dominant_frequency / 1000.0))

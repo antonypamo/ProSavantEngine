@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from .geometry import IcosahedralField
+from .utils import to_psi3
 
 
 class DiracHamiltonian:
@@ -18,10 +19,14 @@ class DiracHamiltonian:
     def H(self, psi: np.ndarray) -> float:
         """Compute the Hamiltonian energy for the provided wavefunction."""
 
-        d = float(np.linalg.norm(psi))
+        # Accept variable-length inputs by mapping into a 3-component psi.
+        psi3 = to_psi3(psi)
+
+        d = float(np.linalg.norm(psi3))
         V = self.field.V_log(d)
-        kinetic = float(np.sum(psi.T @ (self.gamma @ psi)))
-        mass_term = self.m * float(np.sum(psi))
+        # kinetic term: <psi | gamma | psi>
+        kinetic = float(np.sum(psi3.T @ (self.gamma @ psi3)))
+        mass_term = self.m * float(np.sum(psi3))
         return kinetic + mass_term + V
 
 
