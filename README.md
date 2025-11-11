@@ -21,7 +21,7 @@ tags:
 
 **Author:** Antony Padilla Morales  
 **Version:** Φ9.1
-**Repository:** [antonympamo/ProSavantEngine](https://huggingface.co/antonypamo/ProSavantEngine)
+**Repository:** [antonypamo/ProSavantEngine](https://huggingface.co/antonypamo/ProSavantEngine)
 
 ---
 
