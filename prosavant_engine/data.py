@@ -9,6 +9,7 @@ import os
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence
 from typing import Dict, Iterable, List, Mapping, Optional
 
 try:  # pragma: no cover - optional dependency
@@ -20,6 +21,18 @@ except Exception:  # pragma: no cover - safety net for partial installs
 ENV_BASE_PATH = "SAVANT_DATA_PATH"
 ENV_REMOTE_DATASET = "SAVANT_REMOTE_DATASET"
 DEFAULT_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "prosavant", "datasets")
+JSON_SUFFIXES: tuple[str, ...] = (".json", ".jsonl")
+CSV_SUFFIXES: tuple[str, ...] = (".csv",)
+
+STRUCTURED_FILES: Dict[str, Sequence[str]] = {
+    "equations": tuple(f"equations{suffix}" for suffix in JSON_SUFFIXES),
+    "nodes": tuple(f"icosahedron_nodes{suffix}" for suffix in JSON_SUFFIXES),
+    "freq": tuple(f"frequencies{suffix}" for suffix in CSV_SUFFIXES),
+    "const": tuple(f"constants{suffix}" for suffix in CSV_SUFFIXES),
+}
+
+STRUCTURED_MARKERS: tuple[str, ...] = tuple(
+    marker for markers in STRUCTURED_FILES.values() for marker in markers
 STRUCTURED_MARKERS: tuple[str, ...] = (
     "equations.json",
     "icosahedron_nodes.json",
@@ -204,11 +217,32 @@ class DataRepository:
         """Load JSON/CSV structured data when available."""
 
         data: Dict[str, Mapping[str, object] | List[Mapping[str, object]]] = {}
-        data["equations"] = self._load_json("equations.json")
-        data["nodes"] = self._load_json("icosahedron_nodes.json")
-        data["freq"] = self._load_csv("frequencies.csv")
-        data["const"] = self._load_csv("constants.csv")
+        data["equations"] = self._load_first_available(STRUCTURED_FILES["equations"])
+        data["nodes"] = self._load_first_available(STRUCTURED_FILES["nodes"])
+        data["freq"] = self._load_first_available(STRUCTURED_FILES["freq"])
+        data["const"] = self._load_first_available(STRUCTURED_FILES["const"])
         return data
+
+    def _load_first_available(
+        self, filenames: Sequence[str]
+    ) -> Mapping[str, object] | List[Mapping[str, object]]:
+        for filename in filenames:
+            if filename.endswith(".json"):
+                data = self._load_json(filename)
+            elif filename.endswith(".jsonl"):
+                data = self._load_jsonl(filename)
+            elif filename.endswith(".csv"):
+                data = self._load_csv(filename)
+            else:  # pragma: no cover - defensive fallback
+                continue
+
+            if data:
+                return data
+
+        # If none of the candidates exist, return the most suitable empty type
+        if filenames and filenames[0].endswith(".csv"):
+            return []
+        return {}
 
     def _load_json(self, filename: str) -> Mapping[str, object]:
         path = self._resolve(filename)
@@ -225,6 +259,26 @@ class DataRepository:
             reader = csv.DictReader(handle)
             return [dict(row) for row in reader]
 
+    def _load_jsonl(self, filename: str) -> List[Mapping[str, object]]:
+        path = self._resolve(filename)
+        if not path or not os.path.exists(path):
+            return []
+        records: List[Mapping[str, object]] = []
+        with open(path, "r", encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError:  # pragma: no cover - data issue safeguard
+                    warnings.warn(
+                        f"Skipping malformed JSONL record in {filename}",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
+        return records
+
     def resolve_log_path(self) -> str:
         """Return a writable path for Ω-reflection logging."""
 
@@ -240,6 +294,7 @@ __all__ = [
     "DataRepository",
     "DEFAULT_POSSIBLE_PATHS",
     "STRUCTURED_MARKERS",
+    "STRUCTURED_FILES",
     "ENV_BASE_PATH",
     "ENV_REMOTE_DATASET",
 ]
