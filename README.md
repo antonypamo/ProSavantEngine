@@ -90,4 +90,11 @@ structured_data = repo.load_structured()
 If you already synchronized the dataset manually, pass `mount_drive=False` and
 provide your own `additional_paths` so the repository skips the drive mounting
 step.
+### Remote dataset support
+
+Set the `SAVANT_REMOTE_DATASET` environment variable to automatically download
+structured data from the Hugging Face Hub. Optional variables include
+`SAVANT_REMOTE_DATASET_REVISION` (specific commit), `SAVANT_REMOTE_DATASET_SUBDIR`
+(subdirectory containing the files), and `SAVANT_DATASET_CACHE_DIR` (custom
+cache path).
 
