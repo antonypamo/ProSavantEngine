@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import os
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Dict, Iterable, List, Mapping, Optional
 
 try:  # pragma: no cover - optional dependency
     from huggingface_hub import snapshot_download
@@ -31,6 +33,11 @@ STRUCTURED_FILES: Dict[str, Sequence[str]] = {
 
 STRUCTURED_MARKERS: tuple[str, ...] = tuple(
     marker for markers in STRUCTURED_FILES.values() for marker in markers
+STRUCTURED_MARKERS: tuple[str, ...] = (
+    "equations.json",
+    "icosahedron_nodes.json",
+    "frequencies.csv",
+    "constants.csv",
 )
 DEFAULT_POSSIBLE_PATHS: tuple[str, ...] = (
     "/content/drive/MyDrive/savant_rrf1/",
@@ -48,6 +55,10 @@ class DataRepository:
     remote_dataset: Optional[str] = None
     cache_dir: str = DEFAULT_CACHE_DIR
     log_filename: str = "omega_log.jsonl"
+    remote_repo: Optional[str] = None
+    remote_revision: Optional[str] = None
+    remote_subdir: Optional[str] = None
+    cache_dir: Optional[str] = None
 
     def __post_init__(self) -> None:
         self.base_path = self._initial_base_path()
@@ -74,6 +85,21 @@ class DataRepository:
             return detected
 
         return None
+        self.remote_repo = self.remote_repo or os.getenv("SAVANT_REMOTE_DATASET") or None
+        self.remote_revision = self.remote_revision or os.getenv("SAVANT_REMOTE_DATASET_REVISION") or None
+        self.remote_subdir = self.remote_subdir or os.getenv("SAVANT_REMOTE_DATASET_SUBDIR") or None
+        self.cache_dir = self.cache_dir or os.getenv("SAVANT_DATASET_CACHE_DIR") or None
+
+        if self.base_path is None and self.remote_repo:
+            self.base_path = self._download_remote_dataset(
+                repo_id=self.remote_repo,
+                revision=self.remote_revision,
+                subdir=self.remote_subdir,
+                cache_dir=self.cache_dir,
+            )
+
+        if self.base_path is None:
+            self.base_path = self._detect_base_path()
 
     def _detect_base_path(self) -> Optional[str]:
         for path in self.possible_paths:
@@ -133,6 +159,59 @@ class DataRepository:
             if markers.intersection(files):
                 return current
         return None
+    def _download_remote_dataset(
+        self,
+        *,
+        repo_id: str,
+        revision: Optional[str],
+        subdir: Optional[str],
+        cache_dir: Optional[str],
+    ) -> Optional[str]:
+        """Download a dataset snapshot from the Hugging Face Hub."""
+
+        hub_spec = importlib.util.find_spec("huggingface_hub")
+        if hub_spec is None:
+            raise RuntimeError(
+                "Remote dataset support requires the 'huggingface-hub' package."
+            )
+
+        from huggingface_hub import snapshot_download
+
+        target_cache = cache_dir
+        if target_cache is None:
+            safe_repo = repo_id.replace("/", "__")
+            target_cache = os.path.join(
+                os.path.expanduser("~"),
+                ".prosavant",
+                "datasets",
+                safe_repo,
+            )
+        os.makedirs(target_cache, exist_ok=True)
+
+        download_kwargs = {
+            "repo_id": repo_id,
+            "repo_type": "dataset",
+            "local_dir": target_cache,
+        }
+        if revision:
+            download_kwargs["revision"] = revision
+
+        dataset_path = snapshot_download(**download_kwargs)
+
+        candidate_paths = [dataset_path]
+        if subdir:
+            candidate_paths.append(os.path.join(dataset_path, subdir))
+        candidate_paths.extend(
+            [
+                os.path.join(dataset_path, "data"),
+                os.path.join(dataset_path, repo_id.split("/")[-1]),
+            ]
+        )
+
+        for candidate in candidate_paths:
+            if candidate and os.path.exists(candidate):
+                return candidate
+        return dataset_path
 
     def load_structured(self) -> Dict[str, Mapping[str, object] | List[Mapping[str, object]]]:
         """Load JSON/CSV structured data when available."""

@@ -96,6 +96,7 @@ def setup_data_repository(
         if strict:
             raise FileNotFoundError(message)
         warnings.warn(message, RuntimeWarning, stacklevel=2)
+        raise FileNotFoundError(message)
 
     return repository
 
