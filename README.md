@@ -70,6 +70,26 @@ pip install gradio
 python -c "from prosavant_engine.ui import launch_ui; launch_ui()"
 ```
 
+## ☁️ Use in Google Colab
+
+```python
+from huggingface_hub import login
+from prosavant_engine import setup_data_repository
+
+# 1. Authenticate with Hugging Face once per runtime so private datasets are reachable.
+login(token="hf_your_token")
+
+# 2. Build a repository. This mounts Google Drive (if available) and falls back
+#    to downloading the remote dataset into ~/.cache/prosavant/datasets.
+repo = setup_data_repository(remote_dataset="antonympamo/savant_rrf1")
+
+# 3. Load the structured CSV/JSON artefacts required by the engine.
+structured_data = repo.load_structured()
+```
+
+If you already synchronized the dataset manually, pass `mount_drive=False` and
+provide your own `additional_paths` so the repository skips the drive mounting
+step.
 ### Remote dataset support
 
 Set the `SAVANT_REMOTE_DATASET` environment variable to automatically download

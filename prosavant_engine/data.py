@@ -48,6 +48,30 @@ class DataRepository:
     cache_dir: Optional[str] = None
 
     def __post_init__(self) -> None:
+        self.base_path = self._initial_base_path()
+        if self.base_path is None and self.remote_dataset:
+            self.base_path = self._download_remote_dataset(self.remote_dataset)
+
+    def _initial_base_path(self) -> Optional[str]:
+        """Determine the starting base path, considering env vars and fallbacks."""
+
+        if self.base_path and os.path.exists(self.base_path):
+            return self.base_path
+
+        env_base = os.getenv(ENV_BASE_PATH)
+        if env_base and os.path.exists(env_base):
+            return env_base
+
+        if self.remote_dataset is None:
+            env_remote = os.getenv(ENV_REMOTE_DATASET)
+            if env_remote:
+                self.remote_dataset = env_remote
+
+        detected = self._detect_base_path()
+        if detected:
+            return detected
+
+        return None
         self.remote_repo = self.remote_repo or os.getenv("SAVANT_REMOTE_DATASET") or None
         self.remote_revision = self.remote_revision or os.getenv("SAVANT_REMOTE_DATASET_REVISION") or None
         self.remote_subdir = self.remote_subdir or os.getenv("SAVANT_REMOTE_DATASET_SUBDIR") or None
@@ -75,6 +99,53 @@ class DataRepository:
             return None
         return os.path.join(self.base_path, *parts)
 
+    # ------------------------------------------------------------------
+    # Remote dataset support
+    # ------------------------------------------------------------------
+
+    def _download_remote_dataset(self, repo_id: str) -> Optional[str]:
+        """Download a remote dataset via ``huggingface_hub`` when available."""
+
+        if not repo_id:
+            return None
+
+        if snapshot_download is None:
+            warnings.warn(
+                "huggingface_hub is not installed; cannot download remote dataset",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return None
+
+        cache_dir = Path(self.cache_dir)
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        local_dir = cache_dir / repo_id.replace("/", "__")
+
+        try:
+            snapshot_path = snapshot_download(
+                repo_id=repo_id,
+                repo_type="dataset",
+                local_dir=str(local_dir),
+            )
+        except Exception as exc:  # pragma: no cover - network errors at runtime
+            warnings.warn(
+                f"Failed to download dataset '{repo_id}': {exc}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return None
+
+        structured_root = self._locate_structured_root(snapshot_path)
+        return structured_root or snapshot_path
+
+    def _locate_structured_root(self, root: str) -> Optional[str]:
+        """Search ``root`` for a directory containing structured data markers."""
+
+        markers = set(STRUCTURED_MARKERS)
+        for current, _dirs, files in os.walk(root):
+            if markers.intersection(files):
+                return current
+        return None
     def _download_remote_dataset(
         self,
         *,
