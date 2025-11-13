@@ -4,4 +4,6 @@ plotly
 umap-learn
 websockets
 sentence-transformers
+huggingface-hub
+pyarrow>=16.1.0
 pytest
