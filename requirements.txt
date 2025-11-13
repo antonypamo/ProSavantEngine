@@ -6,4 +6,6 @@ websockets
 sentence-transformers
 pytest
 huggingface-hub
+pandas
 pyarrow>=16.1.0
+pytest

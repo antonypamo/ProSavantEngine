@@ -99,3 +99,5 @@ structured data from the Hugging Face Hub. Optional variables include
 (subdirectory containing the files), and `SAVANT_DATASET_CACHE_DIR` (custom
 cache path).
 
+pip install -r requirements.txt
+python AGI_RRF_Phi9_Delta.py
