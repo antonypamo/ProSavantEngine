@@ -21,6 +21,12 @@ try:  # huggingface_hub is optional
 except Exception:  # pragma: no cover
     snapshot_download = None  # type: ignore[assignment]
 
+DEFAULT_POSSIBLE_PATHS: tuple[str, ...] = (
+    "/content/drive/MyDrive/savant_rrf1/data",
+    "/content/drive/MyDrive/savant_rrf1",
+    "/content/drive/MyDrive/csv files_20251002_191151",
+    "/content/drive/MyDrive/json_jsonl_files_20251002_191151",
+)
 
 # ---------------------------------------------------------------------------
 # Canonical layout (taken from 3.oSA structured_data_paths and your folders)
@@ -201,7 +207,6 @@ class DataRepository:
         """
         if not repo_id:
             return None
-
         if snapshot_download is None:
             warnings.warn(
                 "huggingface_hub is not installed; cannot download remote dataset",
@@ -213,7 +218,6 @@ class DataRepository:
         cache_dir = Path(self.cache_dir).expanduser()
         cache_dir.mkdir(parents=True, exist_ok=True)
         local_dir = cache_dir / repo_id.replace("/", "__")
-
         try:
             snapshot_path = snapshot_download(
                 repo_id=repo_id,

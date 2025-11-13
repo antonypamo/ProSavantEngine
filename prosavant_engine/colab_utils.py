@@ -76,7 +76,7 @@ def setup_data_repository(
 
     repository = DataRepository(
         base_path=os.getenv(ENV_BASE_PATH),
-        possible_paths=unique_paths,
+        additional_paths=tuple(unique_paths),
         remote_dataset=remote_dataset or os.getenv(ENV_REMOTE_DATASET),
         cache_dir=cache_dir or DEFAULT_CACHE_DIR,
     )
