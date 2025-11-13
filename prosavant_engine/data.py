@@ -185,7 +185,7 @@ class DataRepository:
 
         dataset_path = snapshot_download(**download_kwargs)
 
-        candidate_paths = [dataset_path]
+        candidate_paths: list[str] = []
         if subdir:
             candidate_paths.append(os.path.join(dataset_path, subdir))
         candidate_paths.extend(
@@ -194,6 +194,7 @@ class DataRepository:
                 os.path.join(dataset_path, repo_id.split("/")[-1]),
             ]
         )
+        candidate_paths.append(dataset_path)
 
         for candidate in candidate_paths:
             if candidate and os.path.exists(candidate):
