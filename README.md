@@ -21,7 +21,7 @@ tags:
 
 **Author:** Antony Padilla Morales  
 **Version:** Φ9.1
-**Repository:** [antonympamo/ProSavantEngine](https://huggingface.co/antonympamo/ProSavantEngine)
+**Repository:** [antonypamo/ProSavantEngine](https://huggingface.co/antonypamo/ProSavantEngine)
 
 ---
 
@@ -51,8 +51,7 @@ It models cognition, resonance, and geometry as a **self-organizing icosahedral 
 ## 🚀 Run Locally
 
 ```bash
-pip install -r requirements.txt
-python AGI_RRF_Phi9_Delta.py
+
 ```
 
 The launcher now also supports direct command-line arguments:
@@ -70,6 +69,8 @@ pip install gradio
 python -c "from prosavant_engine.ui import launch_ui; launch_ui()"
 ```
 
+pip install -r requirements.txt
+python AGI_RRF_Phi9_Delta.py
 ## ☁️ Use in Google Colab
 
 ```python
