@@ -5,3 +5,5 @@ umap-learn
 websockets
 sentence-transformers
 pytest
+huggingface-hub
+pyarrow>=16.1.0
