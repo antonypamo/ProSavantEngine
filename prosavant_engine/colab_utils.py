@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import warnings
 from typing import Iterable, Optional, Sequence
 
 from .data import (
@@ -55,6 +56,7 @@ def setup_data_repository(
     mount_drive: bool = True,
     force_drive_remount: bool = False,
     cache_dir: Optional[str] = None,
+    strict: bool = False,
 ) -> DataRepository:
     """Create a :class:`~prosavant_engine.data.DataRepository` configured for Colab."""
 
@@ -91,6 +93,9 @@ def setup_data_repository(
                 " Ensure the `huggingface-hub` package is installed in the runtime and that"
                 " your token has permission to access the dataset."
             )
+        if strict:
+            raise FileNotFoundError(message)
+        warnings.warn(message, RuntimeWarning, stacklevel=2)
         raise FileNotFoundError(message)
 
     return repository

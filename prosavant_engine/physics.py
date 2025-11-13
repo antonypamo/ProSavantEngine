@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from .geometry import IcosahedralField
+from .utils import to_psi3
 
 # Prefer the Colab helper if available; otherwise define a local fallback.
 try:
@@ -47,7 +48,8 @@ class DiracHamiltonian:
     def __init__(self, field: IcosahedralField) -> None:
         self.field = field
         self.m = 1.0
-        self.gamma = np.eye(3)
+        # Start with a small identity metric; it will be resized on demand.
+        self.gamma = np.eye(1)
 
     def H(self, psi: np.ndarray) -> float:
         """Compute the Hamiltonian energy for the provided wavefunction."""

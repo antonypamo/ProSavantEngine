@@ -69,6 +69,8 @@ pip install gradio
 python -c "from prosavant_engine.ui import launch_ui; launch_ui()"
 ```
 
+pip install -r requirements.txt
+python AGI_RRF_Phi9_Delta.py
 ## ☁️ Use in Google Colab
 
 ```python
