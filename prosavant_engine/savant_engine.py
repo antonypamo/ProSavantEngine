@@ -11,8 +11,21 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-from .data import DataRepository
-from .utils import _get_embedder
+# Flexible imports: package mode (prosavant_engine.*) or plain scripts/notebook
+try:
+    # when running as part of the prosavant_engine package
+    from .data import DataRepository
+    from .utils import _get_embedder
+except ImportError:
+    try:
+        # when imported as "prosavant_engine.savant_engine" from repo root
+        from prosavant_engine.data import DataRepository  # type: ignore
+        from prosavant_engine.utils import _get_embedder  # type: ignore
+    except ImportError:
+        # last resort: same folder (if you did %%writefile data.py / utils.py in Colab)
+        from data import DataRepository  # type: ignore
+        from utils import _get_embedder  # type: ignore
+
 
 
 # --- Resonance, music, memory, self-improvement ------------------------------
