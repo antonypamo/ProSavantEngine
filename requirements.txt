@@ -5,5 +5,6 @@ umap-learn
 websockets
 sentence-transformers
 huggingface-hub
+pandas
 pyarrow>=16.1.0
 pytest

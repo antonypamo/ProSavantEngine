@@ -41,7 +41,7 @@ def _embedder():
                 "  pip install -e .[resonance]"
             ),
         ) from e
-    return get_embedder()("all-MiniLM-L6-v2")
+    return get_embedder()
 
 @app.post("/embed")
 def embed(payload: TextsIn):
